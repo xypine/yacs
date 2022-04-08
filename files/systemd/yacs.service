@@ -1,0 +1,8 @@
+[Unit]
+Description=Yacs daemon
+
+[Service]
+ExecStart={} update-components
+
+[Install]
+WantedBy=multi-user.target
