@@ -35,14 +35,14 @@ fn main() {
     match &args.command {
         Commands::UpdateComponents {  } => {
             println!("Updating components...");
-            let comp = match ComponentManager::new_from_file("components.toml".to_string()) {
+            let comp = match ComponentManager::new_from_file("yacs_components.toml".to_string()) {
                 Some(comp) => comp,
                 None => {
-                    println!("Creating missing component file components.toml...");
+                    println!("Creating missing component file yacs_components.toml...");
                     ComponentManager::new_default()
                 },
             };
-            comp.to_file("components.toml".to_string());
+            comp.to_file("yacs_components.toml".to_string());
 
             comp.update_components();
         },

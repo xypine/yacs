@@ -14,16 +14,12 @@ pub struct ComponentManager {
     components: Vec<Component>
 }
 
-const MODULE_INSTALL_PATH: &str = "installed_modules";
+const MODULE_INSTALL_PATH: &str = "yacs_modules";
 
 impl ComponentManager {
     pub fn new_default() -> ComponentManager {
         ComponentManager {
             components: vec![
-                Component {
-                    name: String::from("TestServer"),
-                    pull_url: String::from("https://github.com/xypine/xypine.github.io.git")
-                },
                 Component {
                     name: String::from("TestServer2"),
                     pull_url: String::from("https://github.com/xypine/Kirjat.ml-api.git")
@@ -62,5 +58,6 @@ impl ComponentManager {
                 Err(e) => println!("failed to clone: {}", e),
             };
         }
+        println!("Update complete!");
     }
 }
