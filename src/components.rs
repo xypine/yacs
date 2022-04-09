@@ -1,16 +1,16 @@
 use git2::Repository;
-use std::{fs, env, path::PathBuf, process::Command, vec};
+use std::{fs, env, path::PathBuf, process::Command, vec, thread::{self, JoinHandle}, sync::Arc};
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Component {
     name: String,
     pull_url: String,
     run: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ComponentManager {
     components: Vec<Component>
 }
@@ -31,7 +31,7 @@ impl ComponentManager {
                 Component {
                     name: String::from("TestServer2"),
                     pull_url: String::from("https://github.com/xypine/Kirjat.ml-api.git"),
-                    run: String::from("python3 -m http.server")
+                    run: String::from("python3 api_server.py")
                 }
             ]
         }
@@ -76,27 +76,36 @@ impl ComponentManager {
         println!("Update complete!");
     }
     pub fn run_components(&self) {
-        let app_dir = get_yacs_path();
-        let install_dir = app_dir.join(MODULE_INSTALL_PATH);
-        for c in &self.components {
-            let name = &c.name;
-            let run = &c.run;
-            let run_parts: Vec<&str> = run.split(" ").collect();
-            let run_program = *run_parts.get(0).expect("Malformed run parameter");
-            let mut args: Vec<&str> = vec![];
-            if run_parts.len() > 1 {
-                args = run_parts[1..run_parts.len()].to_vec();
-            }
-            let comp_path = install_dir.join(name);
-            println!("Trying to run '{}' in the directory '{}' with the arguments '{:?}'", run_program, comp_path.display(), args);
-            let output = Command::new(run_program)
-                .current_dir(comp_path)
-                .args(args)
-                .output()
-                .expect(&format!("failed to execute process for {}", name));
-            println!("Status:\t{}", output.status);
-            println!("Output:\n===\n{}\n===", std::str::from_utf8(&output.stdout).unwrap());
-            println!("Errors:\n===\n{}\n===", std::str::from_utf8(&output.stderr).unwrap());
+        let components = self.components.clone();
+        let mut handles: Vec<JoinHandle<()>> = vec![];
+        for c in components {
+            let handle = thread::spawn(move || {
+                let app_dir = get_yacs_path();
+                let install_dir = app_dir.join(MODULE_INSTALL_PATH);
+                
+                let name = &c.name;
+                let run = &c.run;
+                let run_parts: Vec<&str> = run.split(" ").collect();
+                let run_program = *run_parts.get(0).expect("Malformed run parameter");
+                let mut args: Vec<&str> = vec![];
+                if run_parts.len() > 1 {
+                    args = run_parts[1..run_parts.len()].to_vec();
+                }
+                let comp_path = install_dir.join(name);
+                println!("{}\tTrying to run '{}' in the directory '{}' with the arguments '{:?}'", name, run_program, comp_path.display(), args);
+                let output = Command::new(run_program)
+                    .current_dir(comp_path)
+                    .args(args)
+                    .output()
+                    .expect(&format!("failed to execute process for {}. Remember to download the components before trying to run them (update-components)", name));
+                println!("{}\tStatus:\t{}", name, output.status);
+                println!("{}\tOutput:\n===\n{}\n===", name, std::str::from_utf8(&output.stdout).unwrap());
+                println!("{}\tErrors:\n===\n{}\n===", name, std::str::from_utf8(&output.stderr).unwrap());
+            });
+            handles.push(handle);
+        }
+        for i in handles {
+            i.join().unwrap();
         }
     }
 }
