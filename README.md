@@ -1,5 +1,6 @@
 # Dependencies
 - git
+- libssl-dev
 # Install
 Script to install yacs automatically when dependencies are met:
 ```sh
