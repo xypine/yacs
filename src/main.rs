@@ -25,6 +25,20 @@ enum Commands {
     Install{  },
     /// Update installed components. DELETES ALL PREVIOUS COMPONENT DATA
     UpdateComponents{  },
+    /// Run installed components.
+    RunComponents{  },
+}
+
+fn get_componentmanager() -> ComponentManager {
+    let comp = match ComponentManager::new_from_file("yacs_components.toml".to_string()) {
+        Some(comp) => comp,
+        None => {
+            println!("Creating missing component file yacs_components.toml...");
+            ComponentManager::new_default()
+        },
+    };
+    comp.to_file("yacs_components.toml".to_string());
+    comp
 }
 
 fn main() {
@@ -35,16 +49,15 @@ fn main() {
     match &args.command {
         Commands::UpdateComponents {  } => {
             println!("Updating components...");
-            let comp = match ComponentManager::new_from_file("yacs_components.toml".to_string()) {
-                Some(comp) => comp,
-                None => {
-                    println!("Creating missing component file yacs_components.toml...");
-                    ComponentManager::new_default()
-                },
-            };
-            comp.to_file("yacs_components.toml".to_string());
-
+            
+            let comp = get_componentmanager();
             comp.update_components();
+        },
+        Commands::RunComponents {  } => {
+            println!("Starting components...");
+            
+            let comp = get_componentmanager();
+            comp.run_components();
         },
         _ => { // Also Commands::Install (default)
             install(skip_warn).expect("Installation failed");

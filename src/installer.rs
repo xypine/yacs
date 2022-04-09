@@ -1,6 +1,6 @@
 use std::{env, io, fs};
 use std::{thread, time};
-use std::io::{Write, Error};
+use std::io::{Write};
 use std::path::PathBuf;
 
 macro_rules! FILENAME_SYSTEMD_SERVICE_IN { () => { "../files/systemd/yacs.service" } }
