@@ -29,9 +29,9 @@ impl ComponentManager {
         ComponentManager {
             components: vec![
                 Component {
-                    name: String::from("TestServer2"),
-                    pull_url: String::from("https://github.com/xypine/Kirjat.ml-api.git"),
-                    run: vec![String::from("python3 api_server.py")]
+                    name: String::from("YACSMS"),
+                    pull_url: String::from("https://github.com/xypine/yacs_manager.git"),
+                    run: vec![String::from("runme.sh")]
                 }
             ]
         }
