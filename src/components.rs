@@ -16,6 +16,8 @@ pub struct ComponentManager {
 }
 
 const MODULE_INSTALL_PATH: &str = "yacs_modules";
+const MODULE_INSTALL_SOURCE_PATH: &str = "source";
+const MODULE_INSTALL_LIVE_PATH: &str = "live";
 
 fn get_yacs_path() -> PathBuf {
     // let exec_path = env::current_exe().unwrap();
@@ -54,8 +56,8 @@ impl ComponentManager {
         fs::write(path, serialized).expect("Failed to write component file");
     }
     pub fn update_components(&self) {
-        let app_dir = env::current_dir().unwrap();
-        let install_dir = app_dir.join(MODULE_INSTALL_PATH);
+        let app_dir = get_yacs_path();
+        let install_dir = app_dir.join(MODULE_INSTALL_PATH).join(MODULE_INSTALL_SOURCE_PATH);
         println!("Removing previous module files...");
         match fs::remove_dir_all(install_dir.clone()) {
             Ok(_) => {
@@ -76,12 +78,35 @@ impl ComponentManager {
         println!("Update complete!");
     }
     pub fn run_components(&self) {
+
+        // Copy all modules from the "source" dir to the "live" dir
+        let app_dir = get_yacs_path();
+        let target_dir = app_dir.join(MODULE_INSTALL_PATH).join(MODULE_INSTALL_LIVE_PATH);
+        println!("Removing previous live module files...");
+        match fs::remove_dir_all(target_dir.clone()) {
+            Ok(_) => {
+                println!("Previous live files removed!");
+            },
+            Err(_) => {
+                println!("Couldn't remove previous live files, this is normal if no previous exist.");
+            },
+        }
+
+        println!("Copying new files to live from source...");
+        let copyout = Command::new("cp")
+                        .current_dir(app_dir.join(MODULE_INSTALL_PATH))
+                        .args(["-r", MODULE_INSTALL_SOURCE_PATH, MODULE_INSTALL_LIVE_PATH])
+                        .output()
+                        .expect("Couldn't copy files");
+        println!("Copy output: {}", std::str::from_utf8(&copyout.stdout).unwrap());
+        println!("Copy errors: {}", std::str::from_utf8(&copyout.stderr).unwrap());
+
         let components = self.components.clone();
         let mut handles: Vec<JoinHandle<()>> = vec![];
         for c in components {
             let handle = thread::spawn(move || {
                 let app_dir = get_yacs_path();
-                let install_dir = app_dir.join(MODULE_INSTALL_PATH);
+                let install_dir = app_dir.join(MODULE_INSTALL_PATH).join(MODULE_INSTALL_LIVE_PATH); // Live dir
                 
                 let name = &c.name;
                 let run_list = &c.run;
