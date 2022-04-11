@@ -31,7 +31,7 @@ impl ComponentManager {
                 Component {
                     name: String::from("YACSMS"),
                     pull_url: String::from("https://github.com/xypine/yacs_manager.git"),
-                    run: vec![String::from("runme.sh")]
+                    run: vec![String::from("sh runme.sh")]
                 }
             ]
         }
