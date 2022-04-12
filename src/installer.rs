@@ -1,10 +1,15 @@
-use std::{env, io, fs};
+use std::{env, io, fs, process::{Command, Stdio}};
 use std::{thread, time};
 use std::io::{Write};
 use std::path::PathBuf;
 
-macro_rules! FILENAME_SYSTEMD_SERVICE_IN { () => { "../files/systemd/yacs.service" } }
-const FILENAME_SYSTEMD_SERVICE_OUT: &str = "/etc/systemd/system/yacs_daemon.service";
+macro_rules! FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_IN { () => { "../files/systemd/yacs_updater.service" } }
+const FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_OUT: &str = "/etc/systemd/system/yacs_updater.service";
+const FILENAME_SYSTEMD_COMPONENTUPDATER: &str = "yacs_updater.service";
+
+macro_rules! FILENAME_SYSTEMD_COMPONENTRUNNER_SERVICE_IN { () => { "../files/systemd/yacs_runner.service" } }
+const FILENAME_SYSTEMD_COMPONENTRUNNER_SERVICE_OUT: &str = "/etc/systemd/system/yacs_runner.service";
+const FILENAME_SYSTEMD_COMPONENTRUNNER: &str = "yacs_runner.service";
 
 fn banner() {
     println!("Welcome to YACS version 0.0.0 installer!");
@@ -26,8 +31,17 @@ fn warning_countdown() {
     println!("Starting installation...");
 }
 
-fn write_systemd_service(write_path: &str, executable_path: PathBuf) -> Result<(), io::Error> {
-    let generated = format!(include_str!(FILENAME_SYSTEMD_SERVICE_IN!()), executable_path.display());
+fn write_systemd_update_service(write_path: &str, executable_path: PathBuf) -> Result<(), io::Error> {
+    let generated = format!(include_str!(FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_IN!()), executable_path.display());
+    println!("DATA ===");
+    println!("{}", generated);
+    println!("===");
+    fs::write(write_path, generated)?;
+    Ok(())
+}
+
+fn write_systemd_runner_service(write_path: &str, executable_path: PathBuf) -> Result<(), io::Error> {
+    let generated = format!(include_str!(FILENAME_SYSTEMD_COMPONENTRUNNER_SERVICE_IN!()), executable_path.display());
     println!("DATA ===");
     println!("{}", generated);
     println!("===");
@@ -38,7 +52,7 @@ fn write_systemd_service(write_path: &str, executable_path: PathBuf) -> Result<(
 pub fn install(skip_warn: bool) -> Result<(), io::Error> {
     banner();
     if skip_warn {
-        println!("You chose to skip warnings. (--yes)");
+        println!("You have chosen to skip warnings and any additional confirmations. (--yes)");
     }
     else {
         warning_countdown();
@@ -47,9 +61,44 @@ pub fn install(skip_warn: bool) -> Result<(), io::Error> {
     let app_executable = env::current_exe().unwrap();
     println!("The current directory is {}", app_dir.display());
 
-    println!("Installing a systemd service file to {}...", FILENAME_SYSTEMD_SERVICE_OUT);
-    write_systemd_service(FILENAME_SYSTEMD_SERVICE_OUT, app_executable)?;
+    println!("Installing a systemd service file to {}...", FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_OUT);
+    write_systemd_update_service(FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_OUT, app_executable.clone())?;
     
+    println!("Installing a systemd service file to {}...", FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_OUT);
+    write_systemd_runner_service(FILENAME_SYSTEMD_COMPONENTRUNNER_SERVICE_OUT, app_executable)?;
+
+    println!("Enabling systemd services...");
+    let errmsg1 = format!("Couldn't enable service \"{}\"", FILENAME_SYSTEMD_COMPONENTUPDATER);
+    let out1 = Command::new("systemctl")
+                .args(["enable", FILENAME_SYSTEMD_COMPONENTUPDATER])
+                .output()
+                .expect(&errmsg1);
+    println!("Enable output: {}", std::str::from_utf8(&out1.stdout).unwrap());
+    println!("Enable errors: {}", std::str::from_utf8(&out1.stderr).unwrap());
+    let errmsg2 = format!("Couldn't enable service \"{}\"", FILENAME_SYSTEMD_COMPONENTRUNNER);
+    let out2 = Command::new("systemctl")
+                .args(["enable", FILENAME_SYSTEMD_COMPONENTRUNNER])
+                .output()
+                .expect(&errmsg2);
+    println!("Enable output: {}", std::str::from_utf8(&out2.stdout).unwrap());
+    println!("Enable errors: {}", std::str::from_utf8(&out2.stderr).unwrap());
+
+
+    println!("Starting systemd services...");
+    let errmsg1 = format!("Couldn't start service \"{}\"", FILENAME_SYSTEMD_COMPONENTUPDATER);
+    let out1 = Command::new("systemctl")
+                .args(["start", FILENAME_SYSTEMD_COMPONENTUPDATER])
+                .output()
+                .expect(&errmsg1);
+    println!("Start output: {}", std::str::from_utf8(&out1.stdout).unwrap());
+    println!("Start errors: {}", std::str::from_utf8(&out1.stderr).unwrap());
+    let errmsg2 = format!("Couldn't start service \"{}\"", FILENAME_SYSTEMD_COMPONENTRUNNER);
+    let out2 = Command::new("systemctl")
+                .args(["start", FILENAME_SYSTEMD_COMPONENTRUNNER])
+                .output()
+                .expect(&errmsg2);
+    println!("Start output: {}", std::str::from_utf8(&out2.stdout).unwrap());
+    println!("Start errors: {}", std::str::from_utf8(&out2.stderr).unwrap());
 
     Ok(())
 }

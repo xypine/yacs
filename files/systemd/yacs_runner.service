@@ -1,0 +1,8 @@
+[Unit]
+Description=Yacs runner
+
+[Service]
+ExecStart={} run-components -y
+
+[Install]
+WantedBy=multi-user.target

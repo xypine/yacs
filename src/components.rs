@@ -78,10 +78,6 @@ impl ComponentManager {
         println!("Cloning new files...");
         for c in &self.components {
             let name = &c.name;
-            // match Repository::clone(&c.pull_url, install_dir.join(name).as_path()) {
-            //     Ok(_) => println!("\t{} cloned succesfully", name),
-            //     Err(e) => println!("\tfailed to clone: {}", e),
-            // };
             println!("Cloning \"{}\" from \"{}\" into \"{}\"", name, c.pull_url, install_dir.display());
             let cloneout = Command::new("git")
                         .current_dir(install_dir.clone())

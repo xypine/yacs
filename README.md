@@ -1,9 +1,7 @@
 # Dependencies
-- git (build & run)
+- git
 # Dev Dependencies
 - rust
-- git
-- libssl
 # Install
 Script to install yacs automatically when dependencies are met:
 ```sh

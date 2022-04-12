@@ -1,0 +1,9 @@
+[Unit]
+Description=Yacs updater
+
+[Service]
+ExecStart={} update-components -y
+
+[Install]
+WantedBy=multi-user.target
+Before=yacs_runner.service
