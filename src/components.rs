@@ -19,10 +19,10 @@ const MODULE_INSTALL_SOURCE_PATH: &str = "source";
 const MODULE_INSTALL_LIVE_PATH: &str = "live";
 
 fn get_yacs_path() -> PathBuf {
-    // let exec_path = env::current_exe().unwrap();
-    // let actual_path = exec_path.parent().unwrap();
-    // return actual_path.to_path_buf();
-    env::current_dir().unwrap()
+    let exec_path = env::current_exe().unwrap();
+    let actual_path = exec_path.parent().unwrap();
+    return actual_path.to_path_buf();
+    // env::current_dir().unwrap()
 }
 
 impl ComponentManager {
