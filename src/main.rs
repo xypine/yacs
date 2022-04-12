@@ -57,7 +57,7 @@ fn main() {
             println!("Starting components...");
             
             let comp = get_componentmanager();
-            comp.run_components();
+            comp.run_components(true);
         },
         _ => { // Also Commands::Install (default)
             install(skip_warn).expect("Installation failed");

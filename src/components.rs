@@ -1,5 +1,5 @@
 use git2::Repository;
-use std::{fs, env, path::PathBuf, process::Command, vec, thread::{self, JoinHandle}};
+use std::{fs, env, path::PathBuf, process::{Command, Stdio}, vec, thread::{self, JoinHandle}};
 
 use serde::{Serialize, Deserialize};
 
@@ -77,7 +77,7 @@ impl ComponentManager {
         }
         println!("Update complete!");
     }
-    pub fn run_components(&self) {
+    pub fn run_components(&self, show_output: bool) {
 
         // Copy all modules from the "source" dir to the "live" dir
         let app_dir = get_yacs_path();
@@ -118,10 +118,17 @@ impl ComponentManager {
                         args = run_parts[1..run_parts.len()].to_vec();
                     }
                     let comp_path = install_dir.join(name);
+
+                    let std_out = if show_output { Stdio::inherit() } else { Stdio::null() };
+                    let std_err = if show_output { Stdio::inherit() } else { Stdio::null() };
+
                     println!("{}\tTrying to run '{}' in the directory '{}' with the arguments '{:?}'", name, run_program, comp_path.display(), args);
                     let output = Command::new(run_program)
                         .current_dir(comp_path)
                         .args(args)
+                        .stdin(Stdio::null())
+                        .stdout( std_out )
+                        .stderr( std_err )
                         .output()
                         .expect(&format!("failed to execute process for {}. Remember to download the components before trying to run them (update-components)", name));
                     println!("{}\tStatus:\t{}", name, output.status);
