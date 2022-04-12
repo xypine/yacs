@@ -1,4 +1,3 @@
-use git2::Repository;
 use std::{fs, env, path::PathBuf, process::{Command, Stdio}, vec, thread::{self, JoinHandle}};
 
 use serde::{Serialize, Deserialize};
@@ -67,13 +66,30 @@ impl ComponentManager {
                 println!("Couldn't remove previous files, this is normal if no previous exist.");
             },
         }
+        println!("Creating new source directory...");
+        match fs::create_dir_all(install_dir.clone()) {
+            Ok(_) => {
+                println!("Source directory created!");
+            },
+            Err(_) => {
+                println!("Couldn't create source directory!");
+            },
+        }
         println!("Cloning new files...");
         for c in &self.components {
             let name = &c.name;
-            match Repository::clone(&c.pull_url, install_dir.join(name).as_path()) {
-                Ok(_) => println!("\t{} cloned succesfully", name),
-                Err(e) => println!("\tfailed to clone: {}", e),
-            };
+            // match Repository::clone(&c.pull_url, install_dir.join(name).as_path()) {
+            //     Ok(_) => println!("\t{} cloned succesfully", name),
+            //     Err(e) => println!("\tfailed to clone: {}", e),
+            // };
+            println!("Cloning \"{}\" from \"{}\" into \"{}\"", name, c.pull_url, install_dir.display());
+            let cloneout = Command::new("git")
+                        .current_dir(install_dir.clone())
+                        .args(["clone", &c.pull_url, name])
+                        .output()
+                        .expect("Couldn't clone repo files");
+            println!("Clone output: {}", std::str::from_utf8(&cloneout.stdout).unwrap());
+            println!("Clone errors: {}", std::str::from_utf8(&cloneout.stderr).unwrap());
         }
         println!("Update complete!");
     }
