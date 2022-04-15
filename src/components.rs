@@ -1,8 +1,24 @@
-use std::{fs, process::{Command, Stdio}, vec, thread::{self, JoinHandle}};
+use std::{fs, process::{Command, Stdio}, vec, thread::{self, JoinHandle}, path::PathBuf};
 
 use serde::{Serialize, Deserialize};
 
-use crate::util::get_yacs_path;
+use crate::util::{get_yacs_path, get_yacs_exec_path};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct PathConfig {
+    main: PathBuf,
+    exec: PathBuf
+}
+
+impl PathConfig {
+    pub fn new() -> PathConfig {
+        PathConfig {
+            main: get_yacs_path(),
+            exec: get_yacs_exec_path()
+        }
+    }
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Component {
@@ -13,7 +29,8 @@ struct Component {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ComponentManager {
-    components: Vec<Component>
+    components: Vec<Component>,
+    paths: PathConfig
 }
 
 const MODULE_INSTALL_PATH: &str = "yacs_modules";
@@ -29,7 +46,9 @@ impl ComponentManager {
                     pull_url: String::from("https://github.com/xypine/yacs_manager.git"),
                     run: vec![String::from("sh runme.sh")]
                 }
-            ]
+            ],
+            paths: PathConfig::new()
+
         }
     }
     pub fn new_from_file(path: String) -> Option<ComponentManager> {
