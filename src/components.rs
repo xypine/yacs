@@ -1,6 +1,8 @@
-use std::{fs, env, path::PathBuf, process::{Command, Stdio}, vec, thread::{self, JoinHandle}};
+use std::{fs, process::{Command, Stdio}, vec, thread::{self, JoinHandle}};
 
 use serde::{Serialize, Deserialize};
+
+use crate::util::get_yacs_path;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Component {
@@ -17,13 +19,6 @@ pub struct ComponentManager {
 const MODULE_INSTALL_PATH: &str = "yacs_modules";
 const MODULE_INSTALL_SOURCE_PATH: &str = "source";
 const MODULE_INSTALL_LIVE_PATH: &str = "live";
-
-fn get_yacs_path() -> PathBuf {
-    let exec_path = env::current_exe().unwrap();
-    let actual_path = exec_path.parent().unwrap();
-    return actual_path.to_path_buf();
-    // env::current_dir().unwrap()
-}
 
 impl ComponentManager {
     pub fn new_default() -> ComponentManager {

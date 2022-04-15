@@ -1,4 +1,7 @@
 [Unit]
+Wants=network-online.target
+After=network-online.target
+Before=yacs_runner.service
 Description=Yacs updater
 
 [Service]
@@ -6,4 +9,3 @@ ExecStart={} update-components -y
 
 [Install]
 WantedBy=multi-user.target
-Before=yacs_runner.service

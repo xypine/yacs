@@ -1,3 +1,5 @@
+pub mod util;
+use util::get_yacs_path;
 pub mod installer;
 use installer::install;
 pub mod components;
@@ -30,14 +32,17 @@ enum Commands {
 }
 
 fn get_componentmanager() -> ComponentManager {
-    let comp = match ComponentManager::new_from_file("yacs_components.toml".to_string()) {
+    let base_path = get_yacs_path();
+    let config_filename = base_path.join("yacs_components.toml");
+    println!("Using component manifest \"{}\"", config_filename.display());
+    let comp = match ComponentManager::new_from_file(config_filename.display().to_string()) {
         Some(comp) => comp,
         None => {
             println!("Creating missing component file yacs_components.toml...");
             ComponentManager::new_default()
         },
     };
-    comp.to_file("yacs_components.toml".to_string());
+    comp.to_file(config_filename.display().to_string());
     comp
 }
 

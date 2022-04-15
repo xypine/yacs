@@ -1,6 +1,6 @@
-use std::{env, io, fs, process::{Command, Stdio}};
+use std::{env, io, fs, process::Command};
 use std::{thread, time};
-use std::io::{Write};
+use std::io::Write;
 use std::path::PathBuf;
 
 macro_rules! FILENAME_SYSTEMD_COMPONENTUPDATER_SERVICE_IN { () => { "../files/systemd/yacs_updater.service" } }
