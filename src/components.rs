@@ -25,6 +25,7 @@ struct Component {
     name: String,
     pull_url: String,
     run: Vec<String>,
+    run_after_update: Vec<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -44,7 +45,8 @@ impl ComponentManager {
                 Component {
                     name: String::from("YACSMS"),
                     pull_url: String::from("https://github.com/xypine/yacs_manager.git"),
-                    run: vec![String::from("sh runme.sh")]
+                    run: vec![String::from("sh runme.sh")],
+                    run_after_update: vec![]
                 }
             ],
             paths: PathConfig::new()
@@ -101,7 +103,26 @@ impl ComponentManager {
             println!("Clone output: {}", std::str::from_utf8(&cloneout.stdout).unwrap());
             println!("Clone errors: {}", std::str::from_utf8(&cloneout.stderr).unwrap());
         }
-        println!("Update complete!");
+        println!("Running after-update commands...");
+
+        let components = self.components.clone();
+        let mut handles: Vec<JoinHandle<()>> = vec![];
+        for c in components {
+            let handle = thread::spawn(move || {
+                let app_dir = get_yacs_path();
+                let install_dir = app_dir.join(MODULE_INSTALL_PATH).join(MODULE_INSTALL_SOURCE_PATH); // Source dir
+                
+                let name = &c.name;
+                let run_list = &c.run_after_update;
+                Self::run_commands(run_list, name, install_dir, true);
+            });
+            handles.push(handle);
+        }
+        for i in handles {
+            i.join().unwrap();
+        }
+
+        println!("\nUpdate complete!");
     }
     pub fn run_components(&self, show_output: bool) {
 
@@ -123,7 +144,7 @@ impl ComponentManager {
                         .current_dir(app_dir.join(MODULE_INSTALL_PATH))
                         .args(["-r", MODULE_INSTALL_SOURCE_PATH, MODULE_INSTALL_LIVE_PATH])
                         .output()
-                        .expect("Couldn't copy files");
+                        .expect("Couldn't copy files, remember to download the components before trying to run them (update-components)");
         println!("Copy output: {}", std::str::from_utf8(&copyout.stdout).unwrap());
         println!("Copy errors: {}", std::str::from_utf8(&copyout.stderr).unwrap());
 
@@ -136,36 +157,40 @@ impl ComponentManager {
                 
                 let name = &c.name;
                 let run_list = &c.run;
-                for run in run_list {
-                    let run_parts: Vec<&str> = run.split(" ").collect();
-                    let run_program = *run_parts.get(0).expect("Malformed run parameter");
-                    let mut args: Vec<&str> = vec![];
-                    if run_parts.len() > 1 {
-                        args = run_parts[1..run_parts.len()].to_vec();
-                    }
-                    let comp_path = install_dir.join(name);
-
-                    let std_out = if show_output { Stdio::inherit() } else { Stdio::null() };
-                    let std_err = if show_output { Stdio::inherit() } else { Stdio::null() };
-
-                    println!("{}\tTrying to run '{}' in the directory '{}' with the arguments '{:?}'", name, run_program, comp_path.display(), args);
-                    let output = Command::new(run_program)
-                        .current_dir(comp_path)
-                        .args(args)
-                        .stdin(Stdio::null())
-                        .stdout( std_out )
-                        .stderr( std_err )
-                        .output()
-                        .expect(&format!("failed to execute process for {}. Remember to download the components before trying to run them (update-components)", name));
-                    println!("{}\tStatus:\t{}", name, output.status);
-                    println!("{}\tOutput:\n===\n{}\n===", name, std::str::from_utf8(&output.stdout).unwrap());
-                    println!("{}\tErrors:\n===\n{}\n===", name, std::str::from_utf8(&output.stderr).unwrap());
-                }
+                Self::run_commands(run_list, name, install_dir, show_output);
             });
             handles.push(handle);
         }
         for i in handles {
             i.join().unwrap();
+        }
+    }
+
+    fn run_commands(run_list: &Vec<String>, name: &String, install_dir: PathBuf, show_output: bool) {
+        for run in run_list {
+            let run_parts: Vec<&str> = run.split(" ").collect();
+            let run_program = *run_parts.get(0).expect("Malformed run parameter");
+            let mut args: Vec<&str> = vec![];
+            if run_parts.len() > 1 {
+                args = run_parts[1..run_parts.len()].to_vec();
+            }
+            let comp_path = install_dir.join(name);
+
+            let std_out = if show_output { Stdio::inherit() } else { Stdio::null() };
+            let std_err = if show_output { Stdio::inherit() } else { Stdio::null() };
+
+            println!("{}\tTrying to run '{}' in the directory '{}' with the arguments '{:?}'", name, run_program, comp_path.display(), args);
+            let output = Command::new(run_program)
+                .current_dir(comp_path)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout( std_out )
+                .stderr( std_err )
+                .output()
+                .expect(&format!("failed to execute process for {}. Remember to download the components before trying to run them (update-components)", name));
+            println!("{}\tStatus:\t{}", name, output.status);
+            println!("{}\tOutput:\n===\n{}\n===", name, std::str::from_utf8(&output.stdout).unwrap());
+            println!("{}\tErrors:\n===\n{}\n===", name, std::str::from_utf8(&output.stderr).unwrap());
         }
     }
 }
